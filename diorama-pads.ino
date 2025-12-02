@@ -11,7 +11,7 @@
 #define TXO_PIN 21  // ESP32C3 TXO -> DY-HV20T RX
 #define BUSY_PIN A4
 
-const uint8_t NUM_ELECTRODES = 1;
+const uint8_t NUM_ELECTRODES = 3;
 const uint8_t MPR121_I2C_ADDR = 0x5A;
 
 uint16_t lastTouched = 0;
@@ -34,8 +34,9 @@ void setup() {
   delay(100);
   Serial1.begin(9600, SERIAL_8N1, RXI_PIN, TXO_PIN);
   // while (!Serial);
-  delay(3000);
+  delay(100);
   pinMode(BUSY_PIN, INPUT);
+  delay(3000);
 
   if (!mpr121.begin(MPR121_I2C_ADDR, &Wire)) {
     Serial.print("MPR121 not found, check wiring");
@@ -68,7 +69,7 @@ void loop() {
 
   switch (currentState) {
     case SystemState::IDLE:
-      for (uint8_t i = 0; i < 12; i++) {
+      for (uint8_t i = 0; i < NUM_ELECTRODES; i++) {
         // it if *is* touched and *wasnt* touched before, begin playing and immediately transition state!
         if ((currTouched & _BV(i)) && !(lastTouched & _BV(i))) {
           Serial.print(i);
@@ -77,6 +78,7 @@ void loop() {
           currentState = SystemState::PLAYING;
           break;
         }
+        mpr121.dumpCapData(i);
       }
       break;
     case SystemState::PLAYING:

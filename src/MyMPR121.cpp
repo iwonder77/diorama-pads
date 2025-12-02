@@ -123,9 +123,10 @@ void MyMPR121::dumpCapData(uint8_t electrode) {
   int16_t delta = (int16_t)filtered - (int16_t)baseline;
 
   /*
-   * wrote this before knowing about filteredData() and baselineData() methods,
-  but
-   * it is still useful info so I'm leaving it commented out
+  wrote this before knowing about filteredData() and baselineData() methods,
+  but it is still useful info so I'm just commenting it out
+  */
+  /*
   uint8_t lsb = readRegister8(0x04 + 2 * electrode); // will return 8 bits
   uint8_t msb = readRegister8(0x05 + 2 * electrode); // will return 2 bits
   uint16_t filtered =
