@@ -18,12 +18,11 @@ bool MyMPR121::begin(uint8_t i2c_addr, TwoWire *the_wire) {
   //
   // with the 0.2" PLA plate on the copper touch pads, the delta between
   // filtered data and baseline was quite small (around -30, BEFORE any changes
-  // were made to signal strength, i.e. charge/discharge current and time)
-  //
+  // were made to signal strength, i.e. charge/discharge current and time) and
   // the MPR121's default baseline tracking system parameters for this FALLING
-  // case led the baseline to immediately track the filtered data (believing it
-  // was noise/changes to environment instead of an actual touch event) this
-  // rendered the pads useless in detecting touches
+  // case led the baseline value to immediately track the filtered data
+  // (believing it was noise/changes to environment instead of an actual touch
+  // event) this rendered the pads useless in detecting touches
   //
   // we need to slow down this baseline tracking system by
   // setting new values for MHDF, NHDF, NCLF, and FDLF
@@ -56,31 +55,37 @@ bool MyMPR121::begin(uint8_t i2c_addr, TwoWire *the_wire) {
   writeRegister(MPR121_NHDT, 0x00);
   writeRegister(MPR121_NCLT, 0x00);
   writeRegister(MPR121_FDLT, 0x00);
-  // ----------------------------------------------------------------------------
+  // ------------------------------------------------------
 
   // --- DEBOUNCE ---
   writeRegister(MPR121_DEBOUNCE, 0);
+  // ----------------
 
   // ---------- CONFIG1 & CONFIG 2 ----------
   // (see pg 14 of datasheet for description and encoding values)
   // Filter/Global CDC Configuration Register: 0x5C (CONFIG1)
-  // set to 0x10 = 0b00110000
-  //  * FFI (First Filter Iterations) - bits [7:6]
-  uint8_t ffi = 0b00; // sets samples taken to 6 (default)
-  //  * CDC (global Charge/Discharge Current) - bits [5:0]
+  // * FFI (First Filter Iterations) - bits [7:6]
+  //   - sets samples taken by first level of filtering
+  uint8_t ffi = 0b10; // 18 samples
+  // * CDC (global Charge/Discharge Current) - bits [5:0]
+  //   - sets global supply current for each electrode
   uint8_t cdc_global = 0b100000; // sets current to 32μA
   uint8_t cfg1_reg = (ffi << 6) | (cdc_global & 0x3F);
   writeRegister(MPR121_CONFIG1, cfg1_reg);
   // Filter/Global CDT Configuration Register: 0x5D (CONFIG2)
   // set to 0x41 = 0b01000001
-  //  * CDT (global Charge/Discharge Time) - bits [7:5]
+  // * CDT (global Charge/Discharge Time) - bits [7:5]
+  //   - sets global charge/discharge time for each electrode
   uint8_t cdt_global = 0b010; // sets charge time to 1μS
-  //  * SFI (Second Filter Iterations) - bits [4:3]
-  uint8_t sfi = 0b00; // number of samples for 2nd level filter set to 4
-  //  * ESI (Electrode Sample Interval) - bits [2:0]
-  uint8_t esi = 0b001; // electrode sampling period set to 2 ms
+  // * SFI (Second Filter Iterations) - bits [4:3]
+  //   - sets number of samples for second level of filtering
+  uint8_t sfi = 0b10; // 10 samples
+  // * ESI (Electrode Sample Interval) - bits [2:0]
+  //   - electrode sampling period for second level filtering
+  uint8_t esi = 0b001; // set to 2 ms
   uint8_t cfg2_reg = (cdt_global << 5) | (sfi << 3) | esi;
   writeRegister(MPR121_CONFIG2, cfg2_reg);
+  // ----------------------------------------
 
   // ---------- AUTOCONFIG ----------
   // important: disable autoconfig so it doesn't overwrite our CDC/CDT values
@@ -98,6 +103,7 @@ bool MyMPR121::begin(uint8_t i2c_addr, TwoWire *the_wire) {
   //  * ARFIE (Auto-reconfiguration fail interrupt enable) - bit 1
   //  * ACFIE (Auto-configuration fail interrupt enable) - bit 0
   // (see pg 17 of datasheet for description and encoding values)
+  // --------------------------------
 
   // ---------- RUN Mode ----------
   // this is already set by parent `begin()` function, but has useful info so I
