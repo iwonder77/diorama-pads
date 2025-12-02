@@ -1,16 +1,63 @@
 #include "MyMPR121.h"
-#include "Adafruit_MPR121.h"
 
-MyMPR121::MyMPR121() : Adafruit_MPR121() {}
+MyMPR121::MyMPR121() {}
 
-bool MyMPR121::begin(uint8_t i2c_addr, TwoWire *the_wire) {
-  // First, do the standard Adafruit initialization
-  // This sets up I2C, does soft reset, puts in STOP mode
-  if (!Adafruit_MPR121::begin(i2c_addr, the_wire,
-                              MPR121_TOUCH_THRESHOLD_DEFAULT,
-                              MPR121_RELEASE_THRESHOLD_DEFAULT, false)) {
+bool MyMPR121::begin(uint8_t i2caddr, TwoWire *theWire, uint8_t touchThreshold,
+                     uint8_t releaseThreshold, boolean autoconfig) {
+  if (i2c_dev)
+    delete i2c_dev;
+  i2c_dev = new Adafruit_I2CDevice(i2caddr, theWire);
+  delay(10);
+
+  if (!i2c_dev->begin()) {
+    Serial.print(i2caddr, HEX);
+    Serial.println(": I2C Fail");
     return false;
   }
+
+  // soft reset (reset all registers)
+  writeRegister(MPR121_SOFTRESET, 0x63);
+
+  // ============ CRITICAL: Enter STOP mode before configuration ============
+  // DATASHEET specifically states in sec 5.1 that "register write operation can
+  // only be done in Stop Mode"
+  writeRegister(MPR121_ECR, 0x00);
+  delay(10);
+  // =========================================================================
+
+  uint8_t c = readRegister8(MPR121_CONFIG2);
+  if (c != 0x24) {
+    Serial.print(i2caddr, HEX);
+    Serial.println(": Reset Fail");
+    return false;
+  }
+
+  setThresholds(touchThreshold, releaseThreshold);
+
+  // ---------- CONFIG1 & CONFIG 2 ----------
+  // (see pg 14 of datasheet for description and encoding values)
+  // 1. Filter/Global CDC Configuration Register: 0x5C (CONFIG1)
+  //    * FFI (First Filter Iterations) - bits [7:6]
+  //      - sets samples taken by first level of filtering
+  uint8_t ffi = 0b10; // 18 samples
+  //    * CDC (global Charge/Discharge Current) - bits [5:0]
+  //      - sets global supply current for each electrode
+  uint8_t cdc_global = 0b100000; // sets current to 32μA
+  uint8_t cfg1_reg = (ffi << 6) | (cdc_global & 0x3F);
+  writeRegister(MPR121_CONFIG1, cfg1_reg);
+  // 1. Filter/Global CDT Configuration Register: 0x5D (CONFIG2)
+  //    * CDT (global Charge/Discharge Time) - bits [7:5]
+  //      - sets global charge/discharge time for each electrode
+  uint8_t cdt_global = 0b010; // sets charge time to 1μS
+  //    * SFI (Second Filter Iterations) - bits [4:3]
+  //      - sets number of samples for second level of filtering
+  uint8_t sfi = 0b10; // 10 samples
+  //    * ESI (Electrode Sample Interval) - bits [2:0]
+  //      - electrode sampling period for second level filtering
+  uint8_t esi = 0b001; // set to 2 ms
+  uint8_t cfg2_reg = (cdt_global << 5) | (sfi << 3) | esi;
+  writeRegister(MPR121_CONFIG2, cfg2_reg);
+  // ----------------------------------------
 
   // ---------- SET BASELINE TRACKING PARAMETERS ----------
   // see page 12 (sec 5.5) of datasheet AND application
@@ -61,32 +108,6 @@ bool MyMPR121::begin(uint8_t i2c_addr, TwoWire *the_wire) {
   writeRegister(MPR121_DEBOUNCE, 0);
   // ----------------
 
-  // ---------- CONFIG1 & CONFIG 2 ----------
-  // (see pg 14 of datasheet for description and encoding values)
-  // Filter/Global CDC Configuration Register: 0x5C (CONFIG1)
-  // * FFI (First Filter Iterations) - bits [7:6]
-  //   - sets samples taken by first level of filtering
-  uint8_t ffi = 0b10; // 18 samples
-  // * CDC (global Charge/Discharge Current) - bits [5:0]
-  //   - sets global supply current for each electrode
-  uint8_t cdc_global = 0b100000; // sets current to 32μA
-  uint8_t cfg1_reg = (ffi << 6) | (cdc_global & 0x3F);
-  writeRegister(MPR121_CONFIG1, cfg1_reg);
-  // Filter/Global CDT Configuration Register: 0x5D (CONFIG2)
-  // set to 0x41 = 0b01000001
-  // * CDT (global Charge/Discharge Time) - bits [7:5]
-  //   - sets global charge/discharge time for each electrode
-  uint8_t cdt_global = 0b010; // sets charge time to 1μS
-  // * SFI (Second Filter Iterations) - bits [4:3]
-  //   - sets number of samples for second level of filtering
-  uint8_t sfi = 0b10; // 10 samples
-  // * ESI (Electrode Sample Interval) - bits [2:0]
-  //   - electrode sampling period for second level filtering
-  uint8_t esi = 0b001; // set to 2 ms
-  uint8_t cfg2_reg = (cdt_global << 5) | (sfi << 3) | esi;
-  writeRegister(MPR121_CONFIG2, cfg2_reg);
-  // ----------------------------------------
-
   // ---------- AUTOCONFIG ----------
   // important: disable autoconfig so it doesn't overwrite our CDC/CDT values
   // Auto-Configuration Control Register 0: 0x7B (AUTOCONFIG0)
@@ -95,7 +116,7 @@ bool MyMPR121::begin(uint8_t i2c_addr, TwoWire *the_wire) {
   //  * BVA - bits [3:2], fill with same bits as CL bits in ECR (0x5E) register
   //  * ARE (Auto-Reconfiguration Enable) - bit 1
   //  * ACE (Auto-Configuration Enable) - bit 0
-  writeRegister(MPR121_AUTOCONFIG0, 0b00001010);
+  writeRegister(MPR121_AUTOCONFIG0, 0b10001000);
   // Auto-Configuration Control Register 1: 0x7C (AUTOCONFIG1)
   //  * SCTS (Skip Charge Time Search) - bit 7
   //  * bits [6:3] unused
@@ -105,9 +126,7 @@ bool MyMPR121::begin(uint8_t i2c_addr, TwoWire *the_wire) {
   // (see pg 17 of datasheet for description and encoding values)
   // --------------------------------
 
-  // ---------- RUN Mode ----------
-  // this is already set by parent `begin()` function, but has useful info so I
-  // left it
+  // ---------- Re-enter RUN Mode ----------
   // Set ECR to enable all 12 electrodes
   //  * CL (Calibration Lock) - bits [7:6] = 0b10 (baseline tracking enabled
   //  with 5 bits)
@@ -115,9 +134,142 @@ bool MyMPR121::begin(uint8_t i2c_addr, TwoWire *the_wire) {
   //  disabled)
   //  * ELE_EN (Electrode Enable) - bits [3:0] = 0b1100 (run mode with electrode
   //  0 - 11 detection enabled)
-  // writeRegister(MPR121_ECR, 0x8C);
+  writeRegister(MPR121_ECR, 0x8C);
+  // ---------------------------------------
 
   return true;
+}
+
+uint16_t MyMPR121::filteredData(uint8_t t) {
+  if (t > 12)
+    return 0;
+  uint8_t lsb = readRegister8(0x04 + 2 * t); // will return 8 bits
+  uint8_t msb = readRegister8(0x05 + 2 * t); // will return 2 bits
+  uint16_t filtered =
+      ((uint16_t)(msb & 0x03) << 8) | lsb; // combined into 10-bit value
+  return filtered;
+}
+
+uint16_t MyMPR121::baselineData(uint8_t t) {
+  if (t > 12)
+    return 0;
+  // read 8-bit baseline REGISTERS (these 8-bits acrually represent the upper 8
+  // bits of a 10-bit system)
+  uint8_t baseline_raw = readRegister8(0x1E + t);
+  uint16_t baseline = baseline_raw
+                      << 2; // left shift to match filtered data scale (10-bits)
+  return (baseline);
+}
+
+uint8_t MyMPR121::readRegister8(uint8_t reg) {
+  Adafruit_BusIO_Register thereg = Adafruit_BusIO_Register(i2c_dev, reg, 1);
+
+  return (thereg.read());
+}
+
+void MyMPR121::writeRegister(uint8_t reg, uint8_t value) {
+  // MPR121 must be put in Stop Mode to write to most registers
+  bool stop_required = true;
+
+  // first get the current set value of the MPR121_ECR register
+  Adafruit_BusIO_Register ecr_reg =
+      Adafruit_BusIO_Register(i2c_dev, MPR121_ECR, 1);
+
+  uint8_t ecr_backup = ecr_reg.read();
+  if ((reg == MPR121_ECR) || ((0x73 <= reg) && (reg <= 0x7A))) {
+    stop_required = false;
+  }
+
+  if (stop_required) {
+    // clear this register to set stop mode
+    ecr_reg.write(0x00);
+  }
+
+  Adafruit_BusIO_Register the_reg = Adafruit_BusIO_Register(i2c_dev, reg, 1);
+  the_reg.write(value);
+
+  if (stop_required) {
+    // write back the previous set ECR settings
+    ecr_reg.write(ecr_backup);
+  }
+}
+
+void MyMPR121::setThresholds(uint8_t touch, uint8_t release) {
+  // set all thresholds (the same)
+  for (uint8_t i = 0; i < 12; i++) {
+    writeRegister(MPR121_TOUCHTH_0 + 2 * i, touch);
+    writeRegister(MPR121_RELEASETH_0 + 2 * i, release);
+  }
+}
+
+void MyMPR121::verifyRegisters() {
+  Serial.println("\n======= REGISTER VERIFICATION =======");
+
+  // Check if we're in RUN or STOP mode
+  uint8_t ecr = readRegister8(MPR121_ECR);
+  Serial.print("ECR (0x5E): 0x");
+  Serial.print(ecr, HEX);
+  Serial.println(ecr == 0x00 ? " [STOP MODE]" : " [RUN MODE]");
+
+  // CONFIG1
+  uint8_t cfg1 = readRegister8(MPR121_CONFIG1);
+  Serial.print("CONFIG1 (0x5C): 0x");
+  Serial.print(cfg1, HEX);
+  Serial.print("  FFI=");
+  Serial.print((cfg1 >> 6) & 0x03);
+  Serial.print(", CDC_global=");
+  Serial.println(cfg1 & 0x3F);
+
+  // CONFIG2
+  uint8_t cfg2 = readRegister8(MPR121_CONFIG2);
+  Serial.print("CONFIG2 (0x5D): 0x");
+  Serial.print(cfg2, HEX);
+  Serial.print("  CDT_global=");
+  Serial.print((cfg2 >> 5) & 0x07);
+  Serial.print(", SFI=");
+  Serial.print((cfg2 >> 3) & 0x03);
+  Serial.print(", ESI=");
+  Serial.println(cfg2 & 0x07);
+
+  // AUTOCONFIG0
+  uint8_t ac0 = readRegister8(MPR121_AUTOCONFIG0);
+  Serial.print("AUTOCONFIG0 (0x7B): 0x");
+  Serial.print(ac0, HEX);
+  Serial.print("  ACE=");
+  Serial.print(ac0 & 0x01);
+  Serial.print(", ARE=");
+  Serial.println((ac0 >> 1) & 0x01);
+
+  // Baseline tracking registers
+  Serial.print("MHDF (0x2F): ");
+  Serial.println(readRegister8(0x2F), HEX);
+  Serial.print("NHDF (0x30): ");
+  Serial.println(readRegister8(0x30), HEX);
+  Serial.print("NCLF (0x31): ");
+  Serial.println(readRegister8(0x31), HEX);
+  Serial.print("FDLF (0x32): ");
+  Serial.println(readRegister8(0x32), HEX);
+
+  // Individual CDC values
+  Serial.print("Individual CDC [E0-E2]: ");
+  for (int i = 0; i < 3; i++) {
+    Serial.print(readRegister8(0x5F + i));
+    Serial.print(" ");
+  }
+  Serial.println();
+
+  // Individual CDT values
+  Serial.print("Individual CDT [E0-E2]: ");
+  uint8_t cdt01 = readRegister8(0x6C);
+  uint8_t cdt23 = readRegister8(0x6D);
+  Serial.print(cdt01 & 0x07); // E0
+  Serial.print(" ");
+  Serial.print((cdt01 >> 4) & 0x07); // E1
+  Serial.print(" ");
+  Serial.print(cdt23 & 0x07); // E2
+  Serial.println();
+
+  Serial.println("======================================\n");
 }
 
 void MyMPR121::dumpCapData(uint8_t electrode) {

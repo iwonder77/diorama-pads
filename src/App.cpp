@@ -6,16 +6,19 @@ bool App::setup() {
 
   if (!mpr121.begin(MPR121_I2C_ADDR, &Wire)) {
     Serial.print("MPR121 not found, check wiring");
-    // hold indefinitely
     return false;
   }
+
+  delay(1000);
+
+  mpr121.verifyRegisters();
 
   if (setAutoconfig) {
     Serial.println("Initial CDC and CDT Values:");
     mpr121.dumpCDCandCDTRegisters();
     delay(1000);
 
-    mpr121.setAutoconfig(setAutoconfig);
+    // mpr121.setAutoconfig(setAutoconfig);
 
     Serial.println("New CDC and CDT Values:");
     mpr121.dumpCDCandCDTRegisters();
@@ -23,7 +26,7 @@ bool App::setup() {
   }
 
   if (state == AppState::DEBUG) {
-    Serial.println("Global CDC and CDT Values:");
+    Serial.println("Global CDC and CDT Values will be used");
     mpr121.dumpCDCandCDTRegisters();
     delay(1000);
     Serial.println("=== ELECTRODE READINGS ===");
@@ -57,6 +60,7 @@ void App::runDebug() {
 }
 
 void App::runProd() {
+  /*
   // read busy pin
   bool isPlaying = (digitalRead(BUSY_PIN) == LOW);
 
@@ -92,4 +96,5 @@ void App::runProd() {
 
   // put a delay so it isn't overwhelming
   delay(100);
+  */
 }
