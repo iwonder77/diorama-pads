@@ -1,4 +1,5 @@
-#pragma once
+#ifndef AUDIO_PLAYER_H
+#define AUDIO_PLAYER_H
 /**
  * AudioPlayer.h
  *
@@ -30,3 +31,5 @@ private:
   void sendCommand(uint8_t cmd, uint8_t dataLen, uint8_t *data);
   uint8_t calculateChecksum(uint8_t *buffer, uint8_t len);
 };
+
+#endif
