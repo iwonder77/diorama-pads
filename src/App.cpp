@@ -1,10 +1,10 @@
 #include "App.h"
-#include <Wire.h>
+#include "Config.h"
 
 bool App::setup() {
-  pinMode(BUSY_PIN, INPUT);
+  pinMode(Config::Audio::AUDIO_BUSY, INPUT);
 
-  if (!mpr121.begin(MPR121_I2C_ADDR, &Wire)) {
+  if (!mpr121.begin()) {
     Serial.print("MPR121 not found, check wiring");
     return false;
   }
@@ -52,7 +52,7 @@ void App::loopOnce() {
 }
 
 void App::runDebug() {
-  for (uint8_t i = 0; i < NUM_ELECTRODES; i++) {
+  for (uint8_t i = 0; i < Config::Touch::NUM_ELECTRODES; i++) {
     mpr121.dumpCapData(i);
   }
   Serial.println();

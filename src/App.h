@@ -1,16 +1,15 @@
+#ifndef APP_H
+#define APP_H
+
 #include <Arduino.h>
 
 #include "AudioPlayer.h"
-#include "MyMPR121.h"
+#include "MPR121.h"
 
 #ifndef _BV
 #define _BV(bit) (1 << (bit))
 #endif
 
-#define BUSY_PIN A4
-
-const uint8_t NUM_ELECTRODES = 3;
-const uint8_t MPR121_I2C_ADDR = 0x5A;
 enum class AppState { DEBUG, RUN_PROD, ERROR_RECOVERY };
 enum class ProductionRunState { IDLE, PLAYING };
 
@@ -29,6 +28,8 @@ private:
 
   AppState state = AppState::DEBUG;
   ProductionRunState currentProdRunState = ProductionRunState::IDLE;
-  MyMPR121 mpr121 = MyMPR121();
+  MPR121 mpr121;
   AudioPlayer player;
 };
+
+#endif
