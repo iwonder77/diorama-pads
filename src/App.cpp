@@ -27,7 +27,7 @@ bool App::setup() {
   }
   */
 
-  if (state == AppState::DEBUG) {
+  if (state == Config::AppState::DEBUG) {
     Serial.println("Global CDC and CDT Values will be used");
     mpr121.dumpCDCandCDTRegisters();
     delay(1000);
@@ -39,13 +39,13 @@ bool App::setup() {
 
 void App::loopOnce() {
   switch (state) {
-  case AppState::DEBUG:
+  case Config::AppState::DEBUG:
     runDebug();
     break;
-  case AppState::RUN_PROD:
+  case Config::AppState::RUN_PROD:
     runProd();
     break;
-  case AppState::ERROR_RECOVERY:
+  case Config::AppState::ERROR_RECOVERY:
     // TODO: implementrecover() method
     break;
   default:
@@ -62,9 +62,8 @@ void App::runDebug() {
 }
 
 void App::runProd() {
-  /*
   // read busy pin
-  bool isPlaying = (digitalRead(BUSY_PIN) == LOW);
+  bool isPlaying = (digitalRead(Config::Audio::AUDIO_BUSY) == LOW);
 
   // touched method returns a 16-bit value where each bit represents one pad
   // so if pads 0 and 2 are currently touched:
@@ -73,7 +72,7 @@ void App::runProd() {
 
   switch (currentProdRunState) {
   case ProductionRunState::IDLE:
-    for (uint8_t i = 0; i < NUM_ELECTRODES; i++) {
+    for (uint8_t i = 0; i < Config::Touch::NUM_ELECTRODES; i++) {
       // it if *is* touched and *wasnt* touched before, begin playing and
       // immediately transition state!
       if ((currTouched & _BV(i)) && !(lastTouched & _BV(i))) {
@@ -90,13 +89,12 @@ void App::runProd() {
       // only transition back to IDLE state when sound is done playing
       currentProdRunState = ProductionRunState::IDLE;
     } else {
-      Serial.println("PLAYING");
+      // Serial.println("PLAYING");
     }
     break;
   }
   lastTouched = currTouched;
 
   // put a delay so it isn't overwhelming
-  delay(100);
-  */
+  delay(10);
 }

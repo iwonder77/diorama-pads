@@ -10,11 +10,11 @@
 #define _BV(bit) (1 << (bit))
 #endif
 
-enum class AppState { DEBUG, RUN_PROD, ERROR_RECOVERY };
 enum class ProductionRunState { IDLE, PLAYING };
 
 class App {
 public:
+  App(Config::AppState appState = Config::AppState::DEBUG) : state(appState) {}
   bool setup();
   void loopOnce();
 
@@ -26,7 +26,7 @@ private:
   uint16_t lastTouched = 0;
   uint16_t currTouched = 0;
 
-  AppState state = AppState::DEBUG;
+  Config::AppState state;
   ProductionRunState currentProdRunState = ProductionRunState::IDLE;
   MPR121 mpr121;
   AudioPlayer player;
