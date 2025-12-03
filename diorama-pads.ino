@@ -2,7 +2,7 @@
 #include "src/App.h"
 #include "src/Config.h"
 
-App app;
+App app = App(Config::AppState::RUN_PROD);
 
 void setup() {
   Serial.begin(9600);
