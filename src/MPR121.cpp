@@ -45,19 +45,19 @@ bool MPR121::begin(uint8_t i2caddr, TwoWire *theWire, uint8_t touchThreshold,
   writeRegister(MPR121_NCLF, Config::Touch::NCLF);
   writeRegister(MPR121_FDLF, Config::Touch::FDLF);
 
-  writeRegister(MPR121_MHDR, 0x01);
-  writeRegister(MPR121_NHDR, 0x01);
-  writeRegister(MPR121_NCLR, 0x04);
-  writeRegister(MPR121_FDLR, 0x00);
+  writeRegister(MPR121_MHDR, Config::Touch::MHDR);
+  writeRegister(MPR121_NHDR, Config::Touch::NHDR);
+  writeRegister(MPR121_NCLR, Config::Touch::NCLR);
+  writeRegister(MPR121_FDLR, Config::Touch::FDLR);
 
   writeRegister(MPR121_NHDT, 0x00);
   writeRegister(MPR121_NCLT, 0x00);
   writeRegister(MPR121_FDLT, 0x00);
   // ------------------------------------------------------
 
-  // --- DEBOUNCE ---
+  // ---------- DEBOUNCE ----------
   writeRegister(MPR121_DEBOUNCE, 0);
-  // ----------------
+  // ------------------------------
 
   // ---------- AUTOCONFIG ----------
   // important: disable autoconfig so it doesn't overwrite our CDC/CDT values
@@ -92,7 +92,7 @@ bool MPR121::begin(uint8_t i2caddr, TwoWire *theWire, uint8_t touchThreshold,
 }
 
 uint16_t MPR121::filteredData(uint8_t electrode) {
-  if (electrode > 12)
+  if (electrode >= 12)
     return 0;
   uint8_t lsb =
       readRegister8(MPR121_FILTDATA_0L + 2 * electrode); // will return 8 bits
@@ -104,7 +104,7 @@ uint16_t MPR121::filteredData(uint8_t electrode) {
 }
 
 uint16_t MPR121::baselineData(uint8_t electrode) {
-  if (electrode > 12)
+  if (electrode >= 12)
     return 0;
   // read 8-bit baseline REGISTERS (these 8-bits actually represent the upper 8
   // bits of a 10-bit system)
@@ -153,6 +153,54 @@ void MPR121::setThresholds(uint8_t touch, uint8_t release) {
     writeRegister(MPR121_TOUCHTH_0 + 2 * i, touch);
     writeRegister(MPR121_RELEASETH_0 + 2 * i, release);
   }
+}
+
+uint16_t MPR121::touched() {
+  uint16_t touchMask = 0;
+
+  for (uint8_t i = 0; i < Config::Touch::NUM_ELECTRODES; i++) {
+    uint16_t f = filteredData(i);
+    uint16_t b = baselineData(i);
+    int16_t d = (int16_t)f - (int16_t)b;
+
+    // smoothen out delta readings with ema filter
+    smoothDelta[i] += Config::Touch::ALPHA * (d - smoothDelta[i]);
+    Serial.print(smoothDelta[i]);
+    Serial.print(", ");
+
+    // --- TOUCH DETECTION (w/ hysteresis + debounce) ---
+    if (!isTouched[i]) {
+      // candidate for touch detection
+      if (smoothDelta[i] < Config::Touch::DELTA_TOUCH_THRESHOLD) {
+        if (++touchDebounceCount[i] >= Config::Touch::DEBOUNCE_COUNT) {
+          isTouched[i] = true;         // mark electrode as touched
+          releaseDebounceCount[i] = 0; // start release counter at 0
+        }
+      } else {
+        touchDebounceCount[i] = 0; // reset touch counter
+      }
+    }
+    // --- RELEASE DETECTION (also w/ hysteresis + debounce) ---
+    else {
+      // candidate for release detection (currently touched)
+      if (smoothDelta[i] > Config::Touch::DELTA_RELEASE_THRESHOLD) {
+        if (++releaseDebounceCount[i] >= Config::Touch::DEBOUNCE_COUNT) {
+          isTouched[i] = false;      // mark as untouched
+          touchDebounceCount[i] = 0; // start touch counter at 0
+        }
+      } else {
+        releaseDebounceCount[i] = 0; // reset release counter
+      }
+    }
+
+    // build output bitmask
+    if (isTouched[i]) {
+      touchMask |= (1 << i);
+    }
+  }
+  Serial.println();
+
+  return touchMask;
 }
 
 void MPR121::verifyRegisters() {

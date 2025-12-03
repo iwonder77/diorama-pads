@@ -84,12 +84,19 @@ public:
   void writeRegister(uint8_t reg, uint8_t value);
   void setThresholds(uint8_t touch, uint8_t release);
 
+  uint16_t touched();
+
   void verifyRegisters();
   void dumpCapData(uint8_t electrode);
   void dumpCDCandCDTRegisters();
 
 private:
   Adafruit_I2CDevice *i2c_dev = NULL;
+
+  float smoothDelta[Config::Touch::NUM_ELECTRODES] = {0.0f};
+  uint8_t touchDebounceCount[Config::Touch::NUM_ELECTRODES] = {0};
+  uint8_t releaseDebounceCount[Config::Touch::NUM_ELECTRODES] = {0};
+  bool isTouched[Config::Touch::NUM_ELECTRODES] = {0};
 };
 
 #endif
