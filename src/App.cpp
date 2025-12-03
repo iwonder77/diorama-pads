@@ -13,6 +13,7 @@ bool App::setup() {
 
   mpr121.verifyRegisters();
 
+  /*
   if (setAutoconfig) {
     Serial.println("Initial CDC and CDT Values:");
     mpr121.dumpCDCandCDTRegisters();
@@ -24,6 +25,7 @@ bool App::setup() {
     mpr121.dumpCDCandCDTRegisters();
     delay(1000);
   }
+  */
 
   if (state == AppState::DEBUG) {
     Serial.println("Global CDC and CDT Values will be used");

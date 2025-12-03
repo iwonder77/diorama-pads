@@ -22,7 +22,7 @@ private:
   void runDebug();
   void runProd();
 
-  bool setAutoconfig = false;
+  // bool setAutoconfig = false;
   uint16_t lastTouched = 0;
   uint16_t currTouched = 0;
 
