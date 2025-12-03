@@ -9,6 +9,8 @@
 #include <Arduino.h>
 
 namespace Config {
+enum class AppState { DEBUG, RUN_PROD, ERROR_RECOVERY };
+
 namespace Audio {
 constexpr uint8_t AUDIO_RXI = 20; // ESP32C3 RXI -> DY-HV20T TX
 constexpr uint8_t AUDIO_TXO = 21; // ESP32C3 TXO -> DY-HV20T RX
@@ -18,6 +20,7 @@ constexpr uint8_t AUDIO_BUSY = A4;
 namespace Touch {
 constexpr uint8_t MPR121_I2C_ADDR = 0x5A;
 constexpr uint8_t NUM_ELECTRODES = 3;
+constexpr uint8_t NUM_AVALIABLE_ELECTRODES = 12;
 
 // --- MPR121 Threshold Constants ---
 constexpr uint8_t TOUCH_THRESHOLD = 12;
@@ -28,7 +31,7 @@ constexpr uint8_t RELEASE_THRESHOLD = 6;
 // 0x5C: Filter/Global CDC Configuration Register (CONFIG1)
 // * FFI (First Filter Iterations) - bits [7:6]
 // * CDC (global Charge/Discharge Current) - bits [5:0]
-constexpr uint8_t FFI = 0b10;            // 18 samples for first filter
+constexpr uint8_t FFI = 0b01;            // 10 samples for first filter
 constexpr uint8_t CDC_GLOBAL = 0b100000; // sets current to 32μA
 constexpr uint8_t REG_CONFIG1 = (FFI << 6) | (CDC_GLOBAL & 0x3F);
 // 0x5D: Filter/Global CDT Configuration Register (CONFIG2)
@@ -36,8 +39,8 @@ constexpr uint8_t REG_CONFIG1 = (FFI << 6) | (CDC_GLOBAL & 0x3F);
 // * SFI (Second Filter Iterations) - bits [4:3]
 // * ESI (Electrode Sample Interval) - bits [2:0]
 constexpr uint8_t CDT_GLOBAL = 0b010; // sets charge time to 1μS
-constexpr uint8_t SFI = 0b10;         // 10 samples
-constexpr uint8_t ESI = 0b001;        // set to 2 ms
+constexpr uint8_t SFI = 0b01;         // 6 samples
+constexpr uint8_t ESI = 0b000;        // 1 ms sampling period
 constexpr uint8_t REG_CONFIG2 = (CDT_GLOBAL << 5) | (SFI << 3) | ESI;
 
 // --- BASELINE TRACKING CONFIGURATION ---
@@ -63,6 +66,12 @@ constexpr uint8_t MHDR = 0x01;
 constexpr uint8_t NHDR = 0x01;
 constexpr uint8_t NCLR = 0x04;
 constexpr uint8_t FDLR = 0x00;
+
+// --- SOFTWARE TOUCH DETECTION ---
+constexpr float ALPHA = 0.4f; // α used in the EMA filter formula
+constexpr int16_t DELTA_TOUCH_THRESHOLD = -20;
+constexpr int16_t DELTA_RELEASE_THRESHOLD = -10;
+constexpr uint8_t DEBOUNCE_COUNT = 5;
 
 } // namespace Touch
 } // namespace Config
