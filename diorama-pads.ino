@@ -1,8 +1,6 @@
 #include <Wire.h>
 #include "src/App.h"
-
-#define RXI_PIN 20  // ESP32C3 RXI -> DY-HV20T TX
-#define TXO_PIN 21  // ESP32C3 TXO -> DY-HV20T RX
+#include "src/Config.h"
 
 App app;
 
@@ -11,7 +9,7 @@ void setup() {
   delay(100);
   Wire.begin();
   delay(100);
-  Serial1.begin(9600, SERIAL_8N1, RXI_PIN, TXO_PIN);
+  Serial1.begin(9600, SERIAL_8N1, Config::Audio::AUDIO_RXI, Config::Audio::AUDIO_TXO);
   delay(3000);
 
   if (!app.setup()) {
