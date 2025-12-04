@@ -145,6 +145,9 @@ uint16_t MPR121::touched() {
 
     // smoothen out delta readings with ema filter
     smoothDelta[i] += Config::Touch::ALPHA * (d - smoothDelta[i]);
+    if (smoothDelta[i] > 0) {
+      Serial.print(" ");
+    }
     Serial.print(smoothDelta[i]);
     Serial.print(", ");
 
