@@ -27,10 +27,11 @@ constexpr uint8_t TOUCH_THRESHOLD = 12;
 constexpr uint8_t RELEASE_THRESHOLD = 6;
 
 // --- FILTER/GLOBAL CONFIGURATION ---
-// (see pg 14 of datasheet for description and encoding values)
+// see sec 5.8 of datasheet for description and encoding values
 // 0x5C: Filter/Global CDC Configuration Register (CONFIG1)
 // * FFI (First Filter Iterations) - bits [7:6]
 // * CDC (global Charge/Discharge Current) - bits [5:0]
+// NOTE: FFI here must match FFI in AUTOCONFIG0 (0x7B) if set
 constexpr uint8_t FFI = 0b01;            // 10 samples for first filter
 constexpr uint8_t CDC_GLOBAL = 0b100000; // sets current to 32μA
 constexpr uint8_t REG_CONFIG1 = (FFI << 6) | (CDC_GLOBAL & 0x3F);
@@ -44,8 +45,8 @@ constexpr uint8_t ESI = 0b000;        // 1 ms sampling period
 constexpr uint8_t REG_CONFIG2 = (CDT_GLOBAL << 5) | (SFI << 3) | ESI;
 
 // --- BASELINE TRACKING CONFIGURATION ---
-// See page 12 (sec 5.5) of datasheet AND application
-// note AN3891 for baseline tracking and filtering info
+// See sec 5.5 of datasheet AND application note
+// AN3891 for baseline tracking and filtering info
 //
 // With the 0.2" PLA plate on the copper pads, the filtered data only dropped
 // about ~30 counts, the MPR121's default FALLING baseline tracking treated
@@ -66,6 +67,37 @@ constexpr uint8_t MHDR = 0x01;
 constexpr uint8_t NHDR = 0x01;
 constexpr uint8_t NCLR = 0x04;
 constexpr uint8_t FDLR = 0x00;
+
+// --- ELECTRODE CONFIGURATION REGISTER (ECR) 0x5E ---
+// see sec 5.11 of datasheet
+// * CL (Calibration Lock) - bits [7:6], controls baseline tracking/init value
+// * ELEPROX_EN - bits [5:4], enables and controls proximity detection
+// * ELE_EN - bits [3:0], enables electrode touch/capacitance detection
+constexpr uint8_t CL = 0b10; // init baseline loaded with 5 hb of 1st electrode
+constexpr uint8_t ELEPROX_EN = 0b00;       // proximitiy detection disabled
+constexpr uint8_t ELE_EN = NUM_ELECTRODES; // enable electrodes 0-x (run mode)
+constexpr uint8_t REG_ECR_RUN = (CL << 6) | (ELEPROX_EN << 4) | ELE_EN;
+
+// --- AUTO CONFIGURATION ---
+// see pg 17 of datasheet for description and encoding values
+// Auto-Configuration Control Register 0: 0x7B (AUTOCONFIG0)
+//  * FFI (First Filter Iterations) - bits [7:6] (MUST BE SAME AS 0x5C)
+//  * RETRY - bits [5:4]
+//  * BVA - bits [3:2], fill with same bits as CL bits in ECR (0x5E) register
+//  * ARE (Auto-Reconfiguration Enable) - bit 1
+//  * ACE (Auto-Configuration Enable) - bit 0
+constexpr uint8_t RETRY = 0b00;
+constexpr uint8_t BVA = CL;
+constexpr uint8_t ARE = 0;
+constexpr uint8_t ACE = 0;
+constexpr uint8_t REG_AUTOCONFIG0 =
+    (FFI << 6) | (RETRY << 4) | (BVA << 2) | (ARE << 1) | ACE;
+// Auto-Configuration Control Register 1: 0x7C (AUTOCONFIG1)
+//  * SCTS (Skip Charge Time Search) - bit 7
+//  * bits [6:3] unused
+//  * OORIE (Out-of-range interrupt enable) - bit 2
+//  * ARFIE (Auto-reconfiguration fail interrupt enable) - bit 1
+//  * ACFIE (Auto-configuration fail interrupt enable) - bit 0
 
 // --- SOFTWARE TOUCH DETECTION ---
 constexpr float ALPHA = 0.4f; // α used in the EMA filter formula
