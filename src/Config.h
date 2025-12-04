@@ -101,6 +101,20 @@ constexpr uint8_t REG_AUTOCONFIG0 =
 //  * ARFIE (Auto-reconfiguration fail interrupt enable) - bit 1
 //  * ACFIE (Auto-configuration fail interrupt enable) - bit 0
 
+// --- LIMIT REGISTERS (all 8-bits) ---
+// see pg 18 of datasheet AND application note 3889 for more information
+// on these values
+// Up-Side Limit Register: 0x7D (UPLIMIT)
+//  * USL: sets electrode data level up limit for autoconfig boundary check
+// Low-Side Limit Register: 0x7E (LOWLIMIT)
+//  * LSL: sets electrode data level low limit for autoconfig boundary check
+// Up-Side Limit Register: 0x7F (TARGETLIMIT)
+//  * TL: expected target electrode data level for autoconfig
+// (remember, formulas below assume Vdd = 3.3V)
+constexpr uint8_t USL = 200; // ((Vdd - 0.7)/Vdd) * 256
+constexpr uint8_t LSL = 130; // UPLIMIT * 0.65
+constexpr uint8_t TL = 180;  // UPLIMIT * 0.9
+
 // --- SOFTWARE TOUCH DETECTION ---
 constexpr float ALPHA = 0.4f; // α used in the EMA filter formula
 constexpr int16_t DELTA_TOUCH_THRESHOLD = -25;
