@@ -96,7 +96,7 @@ private:
   float smoothDelta[Config::Touch::NUM_ELECTRODES] = {0.0f};
   uint8_t touchDebounceCount[Config::Touch::NUM_ELECTRODES] = {0};
   uint8_t releaseDebounceCount[Config::Touch::NUM_ELECTRODES] = {0};
-  bool isTouched[Config::Touch::NUM_ELECTRODES] = {0};
+  bool isTouched[Config::Touch::NUM_ELECTRODES] = {false};
 };
 
 #endif
