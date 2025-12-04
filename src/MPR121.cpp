@@ -1,4 +1,5 @@
 #include "MPR121.h"
+#include "Config.h"
 
 MPR121::MPR121() {}
 
@@ -60,32 +61,11 @@ bool MPR121::begin(uint8_t i2caddr, TwoWire *theWire, uint8_t touchThreshold,
   // ------------------------------
 
   // ---------- AUTOCONFIG ----------
-  // important: disable autoconfig so it doesn't overwrite our CDC/CDT values
-  // Auto-Configuration Control Register 0: 0x7B (AUTOCONFIG0)
-  //  * FFI (First Filter Iterations) - bits [7:6] (same as 0x5C)
-  //  * RETRY - bits [5:4]
-  //  * BVA - bits [3:2], fill with same bits as CL bits in ECR (0x5E) register
-  //  * ARE (Auto-Reconfiguration Enable) - bit 1
-  //  * ACE (Auto-Configuration Enable) - bit 0
-  writeRegister(MPR121_AUTOCONFIG0, 0b10001000);
-  // Auto-Configuration Control Register 1: 0x7C (AUTOCONFIG1)
-  //  * SCTS (Skip Charge Time Search) - bit 7
-  //  * bits [6:3] unused
-  //  * OORIE (Out-of-range interrupt enable) - bit 2
-  //  * ARFIE (Auto-reconfiguration fail interrupt enable) - bit 1
-  //  * ACFIE (Auto-configuration fail interrupt enable) - bit 0
-  // (see pg 17 of datasheet for description and encoding values)
+  writeRegister(MPR121_AUTOCONFIG0, Config::Touch::REG_AUTOCONFIG0);
   // --------------------------------
 
   // ---------- Re-enter RUN Mode ----------
-  // Set ECR to enable all 12 electrodes
-  //  * CL (Calibration Lock) - bits [7:6] = 0b10 (baseline tracking enabled
-  //  with 5 bits)
-  //  * ELEPROX_EN (Proximity Enable) - bits [5:4] = 0b00 (proximity detection
-  //  disabled)
-  //  * ELE_EN (Electrode Enable) - bits [3:0] = 0b1100 (run mode with electrode
-  //  0 - 11 detection enabled)
-  writeRegister(MPR121_ECR, 0x8C);
+  writeRegister(MPR121_ECR, Config::Touch::REG_ECR_RUN);
   // ---------------------------------------
 
   return true;
