@@ -4,7 +4,7 @@
 MPR121::MPR121() {}
 
 bool MPR121::begin(uint8_t i2caddr, TwoWire *theWire, uint8_t touchThreshold,
-                   uint8_t releaseThreshold, boolean autoconfig) {
+                   uint8_t releaseThreshold, bool autoconfig) {
   if (i2c_dev)
     delete i2c_dev;
   i2c_dev = new Adafruit_I2CDevice(i2caddr, theWire);
@@ -18,6 +18,10 @@ bool MPR121::begin(uint8_t i2caddr, TwoWire *theWire, uint8_t touchThreshold,
 
   // reset all registers with a soft reset
   writeRegister(MPR121_SOFTRESET, 0x63);
+
+  Serial.println("Initial CDC and CDT Values:");
+  dumpCDCandCDTRegisters();
+  delay(10);
 
   // ------------ CRITICAL: Enter STOP mode before configuration ------------
   // DATASHEET specifically states in sec 5.1 that "register write operation can
@@ -61,12 +65,20 @@ bool MPR121::begin(uint8_t i2caddr, TwoWire *theWire, uint8_t touchThreshold,
   // ------------------------------
 
   // ---------- AUTOCONFIG ----------
-  writeRegister(MPR121_AUTOCONFIG0, Config::Touch::REG_AUTOCONFIG0);
+  setAutoconfig(autoconfig);
   // --------------------------------
 
-  // ---------- Re-enter RUN Mode ----------
+  // ---------- TRANSITION TO RUN Mode ----------
   writeRegister(MPR121_ECR, Config::Touch::REG_ECR_RUN);
-  // ---------------------------------------
+  // --------------------------------------------
+
+  // auto-config triggers after transition to run mode (previous writeRegister()
+  // line) if the `autoconfig` argument is true
+  // give it some time to complete before outputting CDCx/CDTx values
+  delay(1000);
+
+  Serial.println("New CDC and CDT Values:");
+  dumpCDCandCDTRegisters();
 
   return true;
 }
@@ -132,6 +144,28 @@ void MPR121::setThresholds(uint8_t touch, uint8_t release) {
   for (uint8_t i = 0; i < 12; i++) {
     writeRegister(MPR121_TOUCHTH_0 + 2 * i, touch);
     writeRegister(MPR121_RELEASETH_0 + 2 * i, release);
+  }
+}
+
+void MPR121::setAutoconfig(boolean autoconfig) {
+  if (autoconfig) {
+    // enable auto-reconfiguration and auto-configuration bits of
+    // AUTOCONFIG0 register and write to them
+    uint8_t are = 1;
+    uint8_t ace = 1;
+    uint8_t reg_autoconfig0_true = (Config::Touch::FFI << 6) |
+                                   (Config::Touch::RETRY << 4) |
+                                   (Config::Touch::BVA << 2) | (are << 1) | ace;
+
+    writeRegister(MPR121_AUTOCONFIG0, reg_autoconfig0_true);
+
+    writeRegister(MPR121_UPLIMIT, Config::Touch::USL);
+    writeRegister(MPR121_TARGETLIMIT, Config::Touch::TL);
+    writeRegister(MPR121_LOWLIMIT, Config::Touch::LSL);
+    // note the autoconfiguration will take effect when we transition from
+    // STOP -> RUN modes
+  } else {
+    writeRegister(MPR121_AUTOCONFIG0, Config::Touch::REG_AUTOCONFIG0);
   }
 }
 
