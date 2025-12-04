@@ -75,7 +75,7 @@ public:
              TwoWire *theWire = &Wire,
              uint8_t touchThreshold = Config::Touch::TOUCH_THRESHOLD,
              uint8_t releaseThreshold = Config::Touch::RELEASE_THRESHOLD,
-             boolean autoconfig = false);
+             bool autoconfig = true);
 
   uint16_t filteredData(uint8_t electrode);
   uint16_t baselineData(uint8_t electrode);
@@ -83,6 +83,7 @@ public:
   uint8_t readRegister8(uint8_t reg);
   void writeRegister(uint8_t reg, uint8_t value);
   void setThresholds(uint8_t touch, uint8_t release);
+  void setAutoconfig(bool autoconfig);
 
   uint16_t touched();
 
