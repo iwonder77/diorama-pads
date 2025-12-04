@@ -10,7 +10,7 @@
 #define _BV(bit) (1 << (bit))
 #endif
 
-enum class ProductionRunState { IDLE, PLAYING };
+enum class RunState { IDLE, PLAYING, COOLDOWN };
 
 class App {
 public:
@@ -20,14 +20,17 @@ public:
 
 private:
   void runDebug();
-  void runProd();
+  void run();
 
   // bool setAutoconfig = false;
   uint16_t lastTouched = 0;
   uint16_t currTouched = 0;
 
+  unsigned long playbackBeganAt = 0;
+  unsigned long playbackEndedAt = 0;
+
   Config::AppState state;
-  ProductionRunState currentProdRunState = ProductionRunState::IDLE;
+  RunState currentRunState = RunState::IDLE;
   MPR121 mpr121;
   AudioPlayer player;
 };
