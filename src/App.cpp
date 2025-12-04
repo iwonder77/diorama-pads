@@ -13,25 +13,8 @@ bool App::setup() {
 
   mpr121.verifyRegisters();
 
-  /*
-  if (setAutoconfig) {
-    Serial.println("Initial CDC and CDT Values:");
-    mpr121.dumpCDCandCDTRegisters();
-    delay(1000);
-
-    // mpr121.setAutoconfig(setAutoconfig);
-
-    Serial.println("New CDC and CDT Values:");
-    mpr121.dumpCDCandCDTRegisters();
-    delay(1000);
-  }
-  */
-
   if (state == Config::AppState::DEBUG) {
-    Serial.println("Global CDC and CDT Values will be used");
-    mpr121.dumpCDCandCDTRegisters();
-    delay(1000);
-    Serial.println("=== ELECTRODE READINGS ===");
+    Serial.println("=== FULL ELECTRODE READINGS ===");
     Serial.println("Electrode, Filtered, Baseline, Delta");
   }
   return true;
@@ -46,7 +29,7 @@ void App::loopOnce() {
     run();
     break;
   case Config::AppState::ERROR_RECOVERY:
-    // TODO: implementrecover() method
+    // TODO: implement recover() method
     break;
   default:
     break;
