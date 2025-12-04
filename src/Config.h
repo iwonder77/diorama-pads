@@ -9,18 +9,20 @@
 #include <Arduino.h>
 
 namespace Config {
-enum class AppState { DEBUG, RUN_PROD, ERROR_RECOVERY };
+enum class AppState { DEBUG, RUN, ERROR_RECOVERY };
 
 namespace Audio {
 constexpr uint8_t AUDIO_RXI = 20; // ESP32C3 RXI -> DY-HV20T TX
 constexpr uint8_t AUDIO_TXO = 21; // ESP32C3 TXO -> DY-HV20T RX
 constexpr uint8_t AUDIO_BUSY = A4;
+constexpr unsigned long AUDIO_BEGIN_TIMEOUT_MS = 150;
+constexpr unsigned long AUDIO_END_COOLDOWN_MS = 100;
+constexpr unsigned long AUDIO_MAX_DURATION_MS = 7000;
 } // namespace Audio
 
 namespace Touch {
 constexpr uint8_t MPR121_I2C_ADDR = 0x5A;
 constexpr uint8_t NUM_ELECTRODES = 3;
-constexpr uint8_t NUM_AVALIABLE_ELECTRODES = 12;
 
 // --- MPR121 Threshold Constants ---
 constexpr uint8_t TOUCH_THRESHOLD = 12;
@@ -32,7 +34,7 @@ constexpr uint8_t RELEASE_THRESHOLD = 6;
 // * FFI (First Filter Iterations) - bits [7:6]
 // * CDC (global Charge/Discharge Current) - bits [5:0]
 // NOTE: FFI here must match FFI in AUTOCONFIG0 (0x7B) if set
-constexpr uint8_t FFI = 0b01;            // 10 samples for first filter
+constexpr uint8_t FFI = 0b10;            // 18 samples for first filter
 constexpr uint8_t CDC_GLOBAL = 0b100000; // sets current to 32μA
 constexpr uint8_t REG_CONFIG1 = (FFI << 6) | (CDC_GLOBAL & 0x3F);
 // 0x5D: Filter/Global CDT Configuration Register (CONFIG2)
@@ -40,8 +42,8 @@ constexpr uint8_t REG_CONFIG1 = (FFI << 6) | (CDC_GLOBAL & 0x3F);
 // * SFI (Second Filter Iterations) - bits [4:3]
 // * ESI (Electrode Sample Interval) - bits [2:0]
 constexpr uint8_t CDT_GLOBAL = 0b010; // sets charge time to 1μS
-constexpr uint8_t SFI = 0b01;         // 6 samples
-constexpr uint8_t ESI = 0b000;        // 1 ms sampling period
+constexpr uint8_t SFI = 0b10;         // 10 samples
+constexpr uint8_t ESI = 0b010;        // 4 ms sampling period
 constexpr uint8_t REG_CONFIG2 = (CDT_GLOBAL << 5) | (SFI << 3) | ESI;
 
 // --- BASELINE TRACKING CONFIGURATION ---
@@ -73,7 +75,7 @@ constexpr uint8_t FDLR = 0x00;
 // * CL (Calibration Lock) - bits [7:6], controls baseline tracking/init value
 // * ELEPROX_EN - bits [5:4], enables and controls proximity detection
 // * ELE_EN - bits [3:0], enables electrode touch/capacitance detection
-constexpr uint8_t CL = 0b10; // init baseline loaded with 5 hb of 1st electrode
+constexpr uint8_t CL = 0b11; // init baseline loaded with 5 hb of 1st electrode
 constexpr uint8_t ELEPROX_EN = 0b00;       // proximitiy detection disabled
 constexpr uint8_t ELE_EN = NUM_ELECTRODES; // enable electrodes 0-x (run mode)
 constexpr uint8_t REG_ECR_RUN = (CL << 6) | (ELEPROX_EN << 4) | ELE_EN;
@@ -101,8 +103,8 @@ constexpr uint8_t REG_AUTOCONFIG0 =
 
 // --- SOFTWARE TOUCH DETECTION ---
 constexpr float ALPHA = 0.4f; // α used in the EMA filter formula
-constexpr int16_t DELTA_TOUCH_THRESHOLD = -20;
-constexpr int16_t DELTA_RELEASE_THRESHOLD = -10;
+constexpr int16_t DELTA_TOUCH_THRESHOLD = -25;
+constexpr int16_t DELTA_RELEASE_THRESHOLD = -15;
 constexpr uint8_t DEBOUNCE_COUNT = 5;
 
 } // namespace Touch
