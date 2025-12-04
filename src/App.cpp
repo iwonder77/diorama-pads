@@ -96,7 +96,7 @@ void App::run() {
       break;
     }
     if (!isPlaying) {
-      // only transition back to IDLE state when sound is done playing
+      // only transition back to COOLDOWN state when sound is done playing
       currentRunState = RunState::COOLDOWN;
 
       // create timestamp for when playback ended to begin cooldown period
