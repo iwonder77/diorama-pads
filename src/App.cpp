@@ -44,9 +44,9 @@ void App::runDebug() {
   delay(10);
 }
 
-// NOTE: query touched() only when system is IDLE! (not playing sounds)
-// or during COOLDOWN to avoid speaker interference messing with baseline
-// tracking and delta updates
+// NOTE: query MPR121's touched() method only when system is in IDLE or in
+// COOLDOWN (not playing sounds) to avoid speaker interference messing with
+// baseline tracking and delta updates
 void App::run() {
   bool isPlaying = (digitalRead(Config::Audio::AUDIO_BUSY) == LOW);
 
@@ -82,7 +82,9 @@ void App::run() {
       // only transition back to COOLDOWN state when sound is done playing
       currentRunState = RunState::COOLDOWN;
 
-      // create timestamp for when playback ended to begin cooldown period
+      Serial.println("DONE PLAYING");
+
+      // create a timestamp when playback ended to begin cooldown period
       playbackEndedAt = millis();
     } else {
       Serial.println("PLAYING");
@@ -91,7 +93,7 @@ void App::run() {
   case RunState::COOLDOWN:
     // allow MPR121 to take readings/update delta during cooldown period but
     // don't do anything with them, this is to ensure stale readings from last
-    // time and ema filter are updated
+    // transition and ema filter are updated
     Serial.println("cooling down!");
     currTouched = mpr121.touched();
     lastTouched = currTouched;
@@ -101,6 +103,6 @@ void App::run() {
     break;
   }
 
-  // put a delay so it isn't overwhelming
+  // calm lil delay to prevent overwhelming mcu
   delay(10);
 }
