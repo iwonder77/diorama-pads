@@ -179,11 +179,6 @@ uint16_t MPR121::touched() {
 
     // smoothen out delta readings with ema filter
     smoothDelta[i] += Config::Touch::ALPHA * (d - smoothDelta[i]);
-    if (smoothDelta[i] > 0) {
-      Serial.print(" ");
-    }
-    Serial.print(smoothDelta[i]);
-    Serial.print(", ");
 
     // --- TOUCH DETECTION (w/ hysteresis + debounce) ---
     if (!isTouched[i]) {
@@ -215,7 +210,6 @@ uint16_t MPR121::touched() {
       touchMask |= (1 << i);
     }
   }
-  Serial.println();
 
   return touchMask;
 }
@@ -294,18 +288,21 @@ void MPR121::dumpCapData(uint8_t electrode) {
   if (electrode > 11)
     return;
 
-  uint16_t filtered = filteredData(electrode);
-  uint16_t baseline = baselineData(electrode);
-  int16_t delta = (int16_t)filtered - (int16_t)baseline;
+  uint16_t f = filteredData(electrode);
+  uint16_t b = baselineData(electrode);
+  int16_t d = (int16_t)f - (int16_t)b;
+
+  // smoothen out delta readings with ema filter
+  smoothDelta[electrode] += Config::Touch::ALPHA * (d - smoothDelta[electrode]);
 
   // print results
   Serial.print(electrode);
   Serial.print(",");
-  Serial.print(filtered);
+  Serial.print(f);
   Serial.print(",");
-  Serial.print(baseline);
+  Serial.print(b);
   Serial.print(",");
-  Serial.print(delta);
+  Serial.print(smoothDelta[electrode]);
   Serial.println();
 }
 
