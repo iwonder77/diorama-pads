@@ -10,6 +10,7 @@
 
 namespace Config {
 enum class AppState { DEBUG, RUN, ERROR_RECOVERY };
+constexpr uint32_t WATCHDOG_TIMEOUT_MS = 10000;
 
 namespace Audio {
 constexpr uint8_t AUDIO_RXI = 20; // ESP32C3 RXI -> DY-HV20T TX
