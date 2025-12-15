@@ -1,8 +1,12 @@
 #include "App.h"
 #include "Config.h"
+#include "Spotlight.h"
 
 bool App::setup() {
   pinMode(Config::Audio::AUDIO_BUSY, INPUT);
+
+  Spotlight::init();
+  Spotlight::allOff();
 
   if (!mpr121.begin()) {
     Serial.print("MPR121 not found, check wiring");
@@ -62,6 +66,8 @@ void App::run() {
 
         playbackBeganAt = millis();
         currentRunState = RunState::PLAYING;
+
+        Spotlight::on(i);
         break;
       }
     }
@@ -98,6 +104,7 @@ void App::run() {
     currTouched = mpr121.touched();
     lastTouched = currTouched;
     if (millis() - playbackEndedAt >= Config::Audio::AUDIO_END_COOLDOWN_MS) {
+      Spotlight::allOff();
       currentRunState = RunState::IDLE;
     }
     break;
