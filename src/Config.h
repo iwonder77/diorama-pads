@@ -13,6 +13,11 @@ enum class AppState { DEBUG, RUN, ERROR_RECOVERY };
 constexpr uint32_t WATCHDOG_TIMEOUT_MS = 10000;
 constexpr uint8_t MAX_RETRY_ATTEMPTS = 10;
 
+namespace Spotlight {
+constexpr uint8_t SPOTLIGHT_COUNT = 3;
+const uint8_t SPOTLIGHT_PINS[SPOTLIGHT_COUNT] = {7, 8, 10};
+} // namespace Spotlight
+
 namespace Audio {
 constexpr uint8_t AUDIO_RXI = 20; // ESP32C3 RXI -> DY-HV20T TX
 constexpr uint8_t AUDIO_TXO = 21; // ESP32C3 TXO -> DY-HV20T RX
