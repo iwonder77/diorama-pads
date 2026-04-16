@@ -1,23 +1,20 @@
 #include "App.h"
-#include "Config.h"
 #include "Spotlight.h"
 
 bool App::setup() {
-  pinMode(Config::Audio::AUDIO_BUSY, INPUT);
-
   Spotlight::init();
   Spotlight::allOff();
 
-  if (!mpr121.begin()) {
+  if (!mpr121_.begin()) {
     Serial.print("MPR121 not found, check wiring");
     return false;
   }
 
   delay(1000);
 
-  mpr121.verifyRegisters();
+  mpr121_.verifyRegisters();
 
-  if (state == Config::AppState::DEBUG) {
+  if (state_ == Config::AppState::DEBUG) {
     Serial.println("=== FULL ELECTRODE READINGS ===");
     Serial.println("Electrode, Filtered, Baseline, Delta");
   }
@@ -25,7 +22,7 @@ bool App::setup() {
 }
 
 void App::loopOnce() {
-  switch (state) {
+  switch (state_) {
   case Config::AppState::DEBUG:
     runDebug();
     break;
@@ -42,7 +39,7 @@ void App::loopOnce() {
 
 void App::runDebug() {
   for (uint8_t i = 0; i < Config::Touch::NUM_ELECTRODES; i++) {
-    mpr121.dumpCapData(i);
+    mpr121_.dumpCapData(i);
   }
   Serial.println();
   delay(10);
@@ -52,63 +49,26 @@ void App::runDebug() {
 // COOLDOWN (not playing sounds) to avoid speaker interference messing with
 // baseline tracking and delta updates
 void App::run() {
-  bool isPlaying = (digitalRead(Config::Audio::AUDIO_BUSY) == LOW);
-
-  switch (currentRunState) {
-  case RunState::IDLE:
-    currTouched = mpr121.touched();
-    for (uint8_t i = 0; i < Config::Touch::NUM_ELECTRODES; i++) {
-      if ((currTouched & _BV(i)) && !(lastTouched & _BV(i))) {
-        // if it *is* touched and *wasnt* touched before, send UART command to
-        // DY-HV20T to play track, wait for busy pin to assert, then
-        // transition state
-        player.playTrackByIndex((uint16_t)i + 1);
-
-        playbackBeganAt = millis();
-        currentRunState = RunState::PLAYING;
-
-        Spotlight::on(i);
-        break;
-      }
+  // always take readings to turn on multiple spotlights at once
+  curr_touched_ = mpr121_.touched();
+  for (uint8_t i = 0; i < Config::Touch::NUM_ELECTRODES; i++) {
+    if ((curr_touched_ & _BV(i)) && !(last_touched_ & _BV(i))) {
+      // if it *is* touched and *wasnt* touched before, turn on spotlight and
+      // take timestamp for brief cooldown period
+      Spotlight::on(i);
+      spotlights_on_at_[i] = millis();
+      spotlight_on_[i] = true;
     }
-    lastTouched = currTouched;
-    break;
-  case RunState::PLAYING:
-    // wait for busy pin to assert
-    if (millis() - playbackBeganAt < Config::Audio::AUDIO_BEGIN_TIMEOUT_MS)
-      break;
-    // safety timeout: if playback exceeds maximum expected duration, force exit
-    if (millis() - playbackBeganAt > Config::Audio::AUDIO_MAX_DURATION_MS) {
-      Serial.println("WARN: Playback timeout, forcing IDLE");
-      currentRunState = RunState::COOLDOWN;
-      playbackEndedAt = millis();
-      break;
+    if (spotlight_on_[i] && millis() - spotlights_on_at_[i] >
+                                Config::Spotlight::SPOTLIGHT_ON_PERIOD_MS) {
+      // if spotlight is on and its on period has passed, turn off and restart
+      // timestamp
+      Spotlight::off(i);
+      spotlight_on_[i] = false;
+      spotlights_on_at_[i] = 0;
     }
-    if (!isPlaying) {
-      // only transition back to COOLDOWN state when sound is done playing
-      currentRunState = RunState::COOLDOWN;
-
-      Serial.println("DONE PLAYING");
-
-      // create a timestamp when playback ended to begin cooldown period
-      playbackEndedAt = millis();
-    } else {
-      Serial.println("PLAYING");
-    }
-    break;
-  case RunState::COOLDOWN:
-    // allow MPR121 to take readings/update delta during cooldown period but
-    // don't do anything with them, this is to ensure stale readings from last
-    // transition and ema filter are updated
-    Serial.println("cooling down!");
-    currTouched = mpr121.touched();
-    lastTouched = currTouched;
-    if (millis() - playbackEndedAt >= Config::Audio::AUDIO_END_COOLDOWN_MS) {
-      Spotlight::allOff();
-      currentRunState = RunState::IDLE;
-    }
-    break;
   }
+  last_touched_ = curr_touched_;
 
   // calm lil delay to prevent overwhelming mcu
   delay(10);
