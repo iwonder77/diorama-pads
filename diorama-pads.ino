@@ -15,11 +15,8 @@ esp_task_wdt_config_t twdt_config = {
 
 void setup() {
   Serial.begin(9600);
-  delay(100);
   Wire.begin();
   delay(100);
-  Serial1.begin(9600, SERIAL_8N1, Config::Audio::AUDIO_RXI, Config::Audio::AUDIO_TXO);
-  delay(3000);
 
   // initialize the Task Watchdog
   // (TWDT is a hardware-backed timer tied to a specific FreeRTOS task)

@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 
-#include "AudioPlayer.h"
 #include "MPR121.h"
 
 #ifndef _BV
@@ -31,7 +30,6 @@ private:
   Config::AppState state;
   RunState currentRunState = RunState::IDLE;
   MPR121 mpr121;
-  AudioPlayer player;
 };
 
 #endif
