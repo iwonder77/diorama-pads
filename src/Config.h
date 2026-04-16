@@ -15,7 +15,8 @@ constexpr uint8_t MAX_RETRY_ATTEMPTS = 10;
 
 namespace Spotlight {
 constexpr uint8_t SPOTLIGHT_COUNT = 3;
-const uint8_t SPOTLIGHT_PINS[SPOTLIGHT_COUNT] = {7, 10, 8};
+constexpr uint8_t SPOTLIGHT_PINS[SPOTLIGHT_COUNT] = {7, 10, 8};
+constexpr uint32_t SPOTLIGHT_ON_PERIOD_MS = 2000;
 } // namespace Spotlight
 
 namespace Touch {
