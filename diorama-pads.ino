@@ -14,7 +14,7 @@ esp_task_wdt_config_t twdt_config = {
 };
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Wire.begin();
   delay(100);
 
