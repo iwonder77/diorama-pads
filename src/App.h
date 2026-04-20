@@ -3,18 +3,16 @@
 
 #include <Arduino.h>
 
-#include "AudioPlayer.h"
+#include "Config.h"
 #include "MPR121.h"
 
 #ifndef _BV
 #define _BV(bit) (1 << (bit))
 #endif
 
-enum class RunState { IDLE, PLAYING, COOLDOWN };
-
 class App {
 public:
-  App(Config::AppState appState = Config::AppState::DEBUG) : state(appState) {}
+  App(Config::AppState appState = Config::AppState::DEBUG) : state_(appState) {}
   bool setup();
   void loopOnce();
 
@@ -22,16 +20,17 @@ private:
   void runDebug();
   void run();
 
-  uint16_t lastTouched = 0;
-  uint16_t currTouched = 0;
+  uint16_t last_touched_ = 0;
+  uint16_t curr_touched_ = 0;
 
-  unsigned long playbackBeganAt = 0;
-  unsigned long playbackEndedAt = 0;
+  // timestamps to track when spotlights first turn on
+  uint32_t spotlights_on_at_[Config::Spotlight::SPOTLIGHT_COUNT] = {0};
 
-  Config::AppState state;
-  RunState currentRunState = RunState::IDLE;
-  MPR121 mpr121;
-  AudioPlayer player;
+  // boolean to track if a spotlight is on
+  bool spotlight_on_[Config::Spotlight::SPOTLIGHT_COUNT] = {false};
+
+  Config::AppState state_;
+  MPR121 mpr121_;
 };
 
 #endif

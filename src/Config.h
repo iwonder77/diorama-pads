@@ -15,17 +15,9 @@ constexpr uint8_t MAX_RETRY_ATTEMPTS = 10;
 
 namespace Spotlight {
 constexpr uint8_t SPOTLIGHT_COUNT = 3;
-const uint8_t SPOTLIGHT_PINS[SPOTLIGHT_COUNT] = {7, 10, 8};
+constexpr uint8_t SPOTLIGHT_PINS[SPOTLIGHT_COUNT] = {7, 10, 8};
+constexpr uint32_t SPOTLIGHT_ON_PERIOD_MS = 2000;
 } // namespace Spotlight
-
-namespace Audio {
-constexpr uint8_t AUDIO_RXI = 20; // ESP32C3 RXI -> DY-HV20T TX
-constexpr uint8_t AUDIO_TXO = 21; // ESP32C3 TXO -> DY-HV20T RX
-constexpr uint8_t AUDIO_BUSY = A4;
-constexpr unsigned long AUDIO_BEGIN_TIMEOUT_MS = 150;
-constexpr unsigned long AUDIO_END_COOLDOWN_MS = 100;
-constexpr unsigned long AUDIO_MAX_DURATION_MS = 7000;
-} // namespace Audio
 
 namespace Touch {
 constexpr uint8_t MPR121_I2C_ADDR = 0x5A;
