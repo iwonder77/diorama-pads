@@ -9,6 +9,21 @@
 #include <Arduino.h>
 
 namespace Config {
+
+struct Color {
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+  uint8_t w;
+};
+
+constexpr uint8_t LED_DATA_PIN = 10;
+constexpr uint16_t LED_COUNT = 12;
+constexpr uint8_t BRIGHTNESS = 35;
+
+constexpr Color WARM_WHITE = {60, 20, 0, 180};
+constexpr Color GREEN = {5, 220, 10, 10};
+
 enum class AppState { DEBUG, RUN, ERROR_RECOVERY };
 constexpr uint32_t WATCHDOG_TIMEOUT_MS = 10000;
 constexpr uint8_t MAX_RETRY_ATTEMPTS = 10;
