@@ -1,9 +1,12 @@
 #include "App.h"
 #include "Spotlight.h"
+#include "src/Config.h"
 
 bool App::setup() {
   Spotlight::init();
   Spotlight::allOff();
+
+  neop_ring_.begin();
 
   if (!mpr121_.begin()) {
     Serial.print("MPR121 not found, check wiring");
@@ -56,6 +59,7 @@ void App::run() {
       // if it *is* touched and *wasnt* touched before, turn on spotlight and
       // take timestamp for brief cooldown period
       Spotlight::on(i);
+      neop_ring_.setColor(Config::GREEN);
       spotlights_on_at_[i] = millis();
       spotlight_on_[i] = true;
     }
@@ -64,12 +68,14 @@ void App::run() {
       // if spotlight is on and its on period has passed, turn off and restart
       // timestamp
       Spotlight::off(i);
+      neop_ring_.setColor(Config::WARM_WHITE);
       spotlight_on_[i] = false;
       spotlights_on_at_[i] = 0;
     }
   }
   last_touched_ = curr_touched_;
 
+  neop_ring_.update();
   // calm lil delay to prevent overwhelming mcu
   delay(10);
 }

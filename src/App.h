@@ -5,6 +5,7 @@
 
 #include "Config.h"
 #include "MPR121.h"
+#include "NeoPixelRing.h"
 
 #ifndef _BV
 #define _BV(bit) (1 << (bit))
@@ -12,7 +13,9 @@
 
 class App {
 public:
-  App(Config::AppState appState = Config::AppState::DEBUG) : state_(appState) {}
+  App(Config::AppState appState = Config::AppState::DEBUG)
+      : state_(appState), neop_ring_(Config::LED_DATA_PIN, Config::LED_COUNT,
+                                     Config::BRIGHTNESS, Config::WARM_WHITE) {}
   bool setup();
   void loopOnce();
 
@@ -31,6 +34,7 @@ private:
 
   Config::AppState state_;
   MPR121 mpr121_;
+  NeoPixelRing neop_ring_;
 };
 
 #endif
